@@ -23,7 +23,7 @@ impl Critters {
             self.population.push(critter::Critter::default())
         }
         for c in &mut self.population {
-            c.network.new(&cfg, &self.innovations)
+            c.network.new(&cfg, &mut self.innovations)
         }
     }
 }

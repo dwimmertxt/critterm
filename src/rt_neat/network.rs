@@ -23,12 +23,12 @@ impl Node {
     }
 }
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone, Copy)]
 pub struct Connection {
-    innovation: i32,
-    u_node:     i32,
-    v_node:     i32,
-    weight:     i32,
+    innovation: usize,
+    unode:      usize,
+    vnode:      usize,
+    weight:     f64,
     enabled:    bool,
 }
 
@@ -40,7 +40,7 @@ pub struct Graph {
 
 impl Graph {
     pub fn new(&mut self,
-        cfg: &config::Config, innovations: &speciation::Innovations) {
+        cfg: &config::Config, innovations: &mut speciation::Innovations) {
         //
         let mut in_out_nodes: Vec<Node> = Vec::new();
         let mut hidden_nodes: Vec<Node> = Vec::new();
@@ -59,17 +59,42 @@ impl Graph {
         }
 
         let mut rng = rand::thread_rng();
-        for (hn, ion) in iproduct!(hidden_nodes, in_out_nodes) {
+        for (hnode, ionode) in iproduct!(hidden_nodes, in_out_nodes) {
             if rng.gen::<f64>() < cfg.critters.connection_chance {
-                let (mut un, mut vn)= match ion.kind {
-                    1 => (ion.id, hn.id),
-                    2 => (hn.id, ion.id),
+                let (unode, vnode)= match ionode.kind {
+                    1 => (ionode.id, hnode.id),
+                    2 => (hnode.id, ionode.id),
                     _ => panic!(),
                 };
-                //g.establish_connection();
+                self.connections.push(Graph::establish_connection(
+                    unode, vnode, rng.gen_range(-2.0..=2.0), 
+                    true, innovations));
             }
         }
+        //mutate
+        // if self.connections.len() == 0 : start again
     }
-    //fn establish_connection()
+
+    fn establish_connection(
+        unode: usize, vnode: usize, weight: f64, enabled: bool,
+        innovations: &mut speciation::Innovations) -> Connection {
+        //
+        let mut connection = Connection::default();
+        connection.weight = weight;
+        connection.enabled = enabled;
+        for innovation in &innovations.id {
+            if unode == innovation.unode && vnode == innovation.vnode {
+                connection.innovation = innovation.innovation;
+                connection.unode = innovation.unode;
+                connection.vnode = innovation.vnode;
+                return connection
+            }
+        }
+        connection.innovation = innovations.id.len();
+        connection.unode = unode;
+        connection.vnode = vnode;
+        innovations.id.push(connection);
+        return connection
+    }
 }
 

@@ -2,8 +2,7 @@ use crate::rt_neat::network;
 
 #[derive(Default, Debug)]
 pub struct Innovations {
-    id:             Vec<network::Connection>,
-    count:          i32,
+    pub id:             Vec<network::Connection>,
 }
 
 #[derive(Default, Debug)]
