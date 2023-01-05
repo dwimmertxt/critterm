@@ -1,9 +1,10 @@
-#![feature(type_ascription)]
 
-mod config;
-mod rt_neat;
+
+use critterm::config;
+use critterm::critters;
 
 fn main() {
-    let _cfg = config::new();
-    rt_neat::critters::tst();
+    let cfg = config::new();
+    let mut cs = critters::Critters::new(cfg);
+    println!("{:?}", cs.population[0])
 }

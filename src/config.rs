@@ -3,7 +3,21 @@ use serde_yaml::{self};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Config {
-    test_value: u32,
+    pub critters: Critters,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Critters {
+    pub nodes:              Nodes,
+    pub connection_chance:  f64,
+    pub initial_population: i32,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Nodes {
+    pub input:  i32,
+    pub hidden: i32,
+    pub output: i32,
 }
 
 pub fn new() -> Config {
