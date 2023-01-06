@@ -6,7 +6,7 @@ use crate::rt_neat::network;
 pub struct Critter {
     pub species_id:     i32,
     pub fitness:        i32,
-    pub network:        network::Graph,
+    pub network:        network::Network,
 }
 
 impl Critter {
@@ -16,7 +16,7 @@ impl Critter {
         Critter { 
             species_id: i32::default(),
             fitness: i32::default(),
-            network: network::Graph::new(&cfg.rt_neat, innovations),
+            network: network::initialise(&cfg.rt_neat, innovations),
         }
     }
 }

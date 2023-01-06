@@ -31,7 +31,7 @@ pub struct Nodes {
 pub struct Mutation {
     pub weight:         Weight,
     pub random_connection: f64,
-    pub new_node:       f64,
+    pub insert_node:       f64,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

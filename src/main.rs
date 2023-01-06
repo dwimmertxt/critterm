@@ -6,4 +6,5 @@ use critterm::critters::Critters;
 fn main() {
     let cfg = Config::new();
     let cs = Critters::new(&cfg.critters);
+    //println!("{:?}", cs.innovations.id.len());
 }

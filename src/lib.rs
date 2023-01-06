@@ -1,4 +1,4 @@
-#![feature(type_ascription)]
+#![feature(type_ascription, exclusive_range_pattern)]
 
 pub mod config;
 pub mod critter;
