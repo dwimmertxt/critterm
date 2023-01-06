@@ -30,7 +30,7 @@ pub struct Nodes {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Mutation {
     pub weight:         Weight,
-    pub new_connection: f64,
+    pub random_connection: f64,
     pub new_node:       f64,
 }
 
@@ -49,7 +49,7 @@ impl Config {
     }
 
     fn parse_critters() -> Critters {
-        let mut path = std::path::Path::new("critters.yaml");
+        let path = std::path::Path::new("critters.yaml");
         let file = match std::fs::File::open(path) {
             Err(why) => panic!("Could not open: {}: {why}", path.display()),
             Ok(file) => file,
