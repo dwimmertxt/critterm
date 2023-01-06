@@ -11,19 +11,19 @@ pub struct Critters {
 }
 
 impl Critters {
-    pub fn new(cfg: config::Config) -> Critters {
+    pub fn new(cfg: config::Critters) -> Critters {
         let mut cs = Critters::default();
         cs.init_population(cfg);
         cs
 
     }
 
-    fn init_population(&mut self, cfg: config::Config) {
-        for i in 0..cfg.critters.initial_population {
+    fn init_population(&mut self, cfg: config::Critters) {
+        for i in 0..cfg.initial_population {
             self.population.push(critter::Critter::default())
         }
         for c in &mut self.population {
-            c.network.new(&cfg, &mut self.innovations)
+            c.network.new(&cfg.rt_neat, &mut self.innovations)
         }
     }
 }

@@ -1,8 +1,0 @@
----
-critters:
-  nodes:
-    input: 2
-    hidden: 2
-    output: 2
-  connection_chance: 0.5
-  initial_population: 50

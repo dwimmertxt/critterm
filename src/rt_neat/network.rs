@@ -40,39 +40,40 @@ pub struct Graph {
 
 impl Graph {
     pub fn new(&mut self,
-        cfg: &config::Config, innovations: &mut speciation::Innovations) {
+        cfg: &config::RtNeat, innovations: &mut speciation::Innovations) {
         //
         let mut in_out_nodes: Vec<Node> = Vec::new();
         let mut hidden_nodes: Vec<Node> = Vec::new();
 
-        for i in 0..cfg.critters.nodes.input {
+        for _ in 0..cfg.nodes.input {
             self.nodes.push(Node::new(self.nodes.len(), 1, 1, 0, 0));
             in_out_nodes.push(Node::new(self.nodes.len(), 1, 1, 0, 0));
         }
-        for i in 0..cfg.critters.nodes.output {
+        for _ in 0..cfg.nodes.output {
             self.nodes.push(Node::new(self.nodes.len(), 2, 3, 0, 0));
             in_out_nodes.push(Node::new(self.nodes.len(), 2, 3, 0, 0));
         }
-        for i in 0..cfg.critters.nodes.hidden {
+        for _ in 0..cfg.nodes.hidden {
             self.nodes.push(Node::new(self.nodes.len(), 0, 2, 0, 0));
             hidden_nodes.push(Node::new(self.nodes.len(), 0, 2, 0, 0));
         }
 
         let mut rng = rand::thread_rng();
-        for (hnode, ionode) in iproduct!(hidden_nodes, in_out_nodes) {
-            if rng.gen::<f64>() < cfg.critters.connection_chance {
-                let (unode, vnode)= match ionode.kind {
-                    1 => (ionode.id, hnode.id),
-                    2 => (hnode.id, ionode.id),
-                    _ => panic!(),
-                };
-                self.connections.push(Graph::establish_connection(
-                    unode, vnode, rng.gen_range(-2.0..=2.0), 
-                    true, innovations));
+        while self.connections.len() == 0 {
+            for (hnode, ionode) in iproduct!(&hidden_nodes, &in_out_nodes) {
+                if rng.gen::<f64>() < cfg.nodes.connection_chance {
+                    let (unode, vnode)= match ionode.kind {
+                        1 => (ionode.id, hnode.id),
+                        2 => (hnode.id, ionode.id),
+                        _ => panic!(),
+                    };
+                    self.connections.push(Graph::establish_connection(
+                        unode, vnode, rng.gen_range(-2.0..=2.0), 
+                        true, innovations));
+                }
             }
+            // mutate  
         }
-        //mutate
-        // if self.connections.len() == 0 : start again
     }
 
     fn establish_connection(
@@ -95,6 +96,14 @@ impl Graph {
         connection.vnode = vnode;
         innovations.id.push(connection);
         return connection
+    }
+
+    fn mutate(&self, 
+        cfg: config::Mutation, innovations: &mut speciation::Innovations) {
+        //
+        for connections in &self.connections {
+            
+        }
     }
 }
 

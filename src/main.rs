@@ -1,10 +1,10 @@
 
 
-use critterm::config;
-use critterm::critters;
+use critterm::config::Config;
+use critterm::critters::Critters;
 
 fn main() {
-    let cfg = config::new();
-    let mut cs = critters::Critters::new(cfg);
-    println!("{:?}", cs.innovations)
+    let cfg = Config::new();
+    let cs = Critters::new(cfg.critters);
+    //println!("{:?}", cs.innovations)
 }

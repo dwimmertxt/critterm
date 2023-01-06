@@ -1,0 +1,17 @@
+---
+rt_neat:
+  nodes:
+    input: 2
+    hidden: 2
+    output: 2
+    connection_chance: 0.5
+  mutation:
+    weight:
+      chance: 0.001
+      adj_threshold: 0.9
+      add_threshold: 0.5
+      add_factor: 0.2
+      sub_factor: 0.2
+    new_connection: 0.05
+    new_node: 0.05
+initial_population: 50
