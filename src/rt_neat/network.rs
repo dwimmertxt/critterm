@@ -87,6 +87,7 @@ impl Network {
                 cxn.weight = rng.gen_range(-2.0..=2.0);
                 continue
             }
+            // todo: ensure new cxn.weight does not exceed min/max bounds
             if rng.gen::<f64>() > cfg.weight.add_threshold {
                 cxn.weight -= cxn.weight * cfg.weight.sub_factor;
                 continue
@@ -109,7 +110,7 @@ impl Network {
         let mut unode = self.nodes[rng.gen_range(0..nodes_len)];
         let mut vnode = self.nodes[rng.gen_range(0..nodes_len)];
         let mut establish_cxn = false;
-        // replace 0..n search attempts with pruned list of connection
+        // todo: replace 0..n search attempts with pruned list of connection
         // possibilities. only two outcomes: new/toggled connection, or 
         // method safely exits without further ado.
         for _ in 0..20 {
