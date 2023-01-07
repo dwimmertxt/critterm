@@ -1,5 +1,7 @@
+use std::collections::HashMap;
 use itertools::iproduct;
 use rand::Rng;
+use rand::seq::SliceRandom;
 use crate::config;
 use crate::rt_neat::speciation;
 
@@ -98,7 +100,7 @@ impl Network {
             self.random_connection(cfg, innovations);
         }
         if rng.gen::<f64>() <= cfg.insert_node {
-            self.insert_node(innovations);
+            //self.insert_node(innovations);
         }
     }
 
@@ -106,24 +108,19 @@ impl Network {
         cfg: &config::Mutation, innovations: &mut speciation::Innovations) {
         //
         let mut rng = rand::thread_rng();
-        let nodes_len = self.nodes.len();
-        let mut unode = self.nodes[rng.gen_range(0..nodes_len)];
-        let mut vnode = self.nodes[rng.gen_range(0..nodes_len)];
+        let mut nodes_by_layer = HashMap::new();
+        for n in &self.nodes {
+            nodes_by_layer.entry(&n.layer).or_insert_with(Vec::new).push(&n.id)
+        }
+        let max_layer = nodes_by_layer.keys().max();
+        let unodel = rng.gen_range(1..max_layer);
+        let vnodel = rng.gen_range(unodel+1..=max_layer); 
+        let unode = nodes_by_layer[&unodel].choose(&mut rng).unwrap();
+        let vnode = nodes_by_layer[&vnodel].choose(&mut rng).unwrap();
+
         let mut establish_cxn = false;
-        // todo: replace 0..n search attempts with pruned list of connection
-        // possibilities. only two outcomes: new/toggled connection, or 
-        // method safely exits without further ado.
-        for _ in 0..20 {
-            if unode.id == vnode.id || unode.layer >= vnode.layer {
-                unode = self.nodes[rng.gen_range(0..nodes_len)];
-                vnode = self.nodes[rng.gen_range(0..nodes_len)];
-                continue
-            }
-            establish_cxn = true;
-            for cxn in &mut self.connections {
-                if !(cxn.unode == unode.id && cxn.vnode == vnode.id) {   
-                    continue
-                }
+        for cxn in &mut self.connections {
+            if cxn.unode == **unode && cxn.vnode == **vnode {
                 establish_cxn = false;
                 if rng.gen::<f64>() <= 0.25 {
                     match cxn.enabled {
@@ -133,11 +130,10 @@ impl Network {
                 }
                 break
             }
-            break
         }
         if establish_cxn {
             self.establish_connection(
-                unode.id, vnode.id, rng.gen_range(-2.0..=2.0),
+                **unode, **vnode, rng.gen_range(-2.0..=2.0),
                 true, innovations
             );
         }
@@ -187,12 +183,12 @@ pub fn initialise(
             continue
         }
         if id >= i && id < i + o {
-            nodes.push(Node::new(id, 2, 3, 0, 0));
+            nodes.push(Node::new(id, 3, 3, 0, 0));
             in_out_n.push(nodes[id]);
             continue
         }
         if id >= i + o {
-            nodes.push(Node::new(id, 0, 2, 0, 0));
+            nodes.push(Node::new(id, 2, 2, 0, 0));
             hidden_n.push(nodes[id]);
             continue
         }
@@ -203,7 +199,7 @@ pub fn initialise(
             if rng.gen::<f64>() < cfg.nodes.connection_chance {
                 let (unode, vnode)= match ionode.kind {
                     1 => (ionode.id, hnode.id),
-                    2 => (hnode.id, ionode.id),
+                    3 => (hnode.id, ionode.id),
                     _ => panic!(),
                 };
                 network.establish_connection(
