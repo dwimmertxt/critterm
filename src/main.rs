@@ -1,10 +1,8 @@
-
-
 use critterm::config::Config;
-use critterm::critters::Critters;
+use critterm::critters;
 
 fn main() {
     let cfg = Config::new();
-    let cs = Critters::new(&cfg.critters);
+    let cs = critters::init(&cfg.critters);
     //println!("{:?}", cs.innovations.id.len());
 }

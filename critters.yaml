@@ -8,8 +8,8 @@ rt_neat:
   mutation:
     weight:
       chance: 0.001
-      adj_threshold: 0.9
-      add_threshold: 0.5
+      random: 0.9
+      add_else_sub: 0.5
       add_factor: 0.2
       sub_factor: 0.2
     random_connection: 0.05

@@ -3,20 +3,20 @@ use itertools::iproduct;
 use rand::Rng;
 use rand::seq::SliceRandom;
 use crate::config;
-use crate::rt_neat::speciation;
+use crate::rt_neat::{species, mutation};
 
 #[derive(Default, Debug, Clone, Copy)]
-struct Node {
-    id:         usize,
-    kind:       i32,
-    layer:      i32,
-    sum_input:  i32,
-    sum_output: i32,
+pub struct Node {
+    pub id:         usize,
+    pub kind:       usize,
+    pub layer:      usize,
+    pub sum_input:  i32,
+    pub sum_output: i32,
 }
 
 impl Node {
-    fn new(
-        id: usize, kind: i32, layer: i32, 
+    pub fn new(
+        id: usize, kind: usize, layer: usize, 
         sum_input: i32, sum_output: i32) -> Node {
         Node { id, kind, layer, sum_input, sum_output }
     }
@@ -25,14 +25,14 @@ impl Node {
 #[derive(Default, Debug, Clone, Copy)]
 pub struct Connection {
     innovation: usize,
-    unode:      usize,
-    vnode:      usize,
-    weight:     f64,
-    enabled:    bool,
+    pub unode:      usize,
+    pub vnode:      usize,
+    pub weight:     f64,
+    pub enabled:    bool,
 }
 
 impl Connection {
-    fn new(
+    pub fn new(
         innovation: usize, unode: usize, vnode: usize,
         weight: f64, enabled: bool) -> Connection {
         Connection { innovation, unode, vnode, weight, enabled }
@@ -41,183 +41,94 @@ impl Connection {
 
 #[derive(Default, Debug)]
 pub struct Network {
-    nodes:          Vec<Node>,
-    connections:    Vec<Connection>,
+    pub nodes:          Vec<Node>,
+    pub connections:    Vec<Connection>,
 }
 
 impl Network {
-    fn new(nodes: Vec<Node>, connections: Vec<Connection>) -> Network {
+    pub fn new(nodes: Vec<Node>, connections: Vec<Connection>) -> Network {
         Network { nodes, connections }
     }
 
-    fn establish_connection(&mut self,
-        unode: usize, vnode: usize, weight: f64, enabled: bool,
-        innovations: &mut speciation::Innovations) {
+    pub fn establish_connection(&mut self,
+        unode: usize, vnode: usize, weight: Option<f64>, enabled: bool,
+        innovations: &mut species::Innovations) {
         //
-        let mut new_innov = true;
-        let mut cxn = Connection::default();
-        for innov in &innovations.id {
-            if unode == innov.unode && vnode == innov.vnode {
-                cxn = Connection{ 
-                    innovation: innov.innovation,
-                    unode:      innov.unode,
-                    vnode:      innov.vnode,
-                    weight,
-                    enabled,  
-                };
-                new_innov = false;
-            }
+        let mut rng = rand::thread_rng();
+        let weight = weight.unwrap_or(rng.gen_range(-2.0..=2.0));
+        for inv in &innovations.id {
+            if !(unode == inv.unode && vnode == inv.vnode) { continue }
+            self.connections.push(Connection { 
+                innovation: inv.innovation, unode: inv.unode, vnode: inv.vnode,
+                weight, enabled  
+            });
+            return
         }
-        if new_innov {
-            cxn = Connection {
-                innovation: innovations.id.len(), unode, vnode, weight, enabled 
-            };
-            innovations.id.push(cxn);
-        }
+        let cxn = Connection {
+            innovation: innovations.id.len(), unode, vnode, weight, enabled 
+        };
+        innovations.id.push(cxn);
         self.connections.push(cxn)
     }
 
-    fn mutate(&mut self,
-        cfg: &config::Mutation, innovations: &mut speciation::Innovations) {
+    pub fn insert_node(&mut self,
+        node: &Node) {
         //
-        let mut rng = rand::thread_rng();
-        for cxn in &mut self.connections {
-            if rng.gen::<f64>() > cfg.weight.chance {
-                continue
-            }
-            if rng.gen::<f64>() > cfg.weight.adj_threshold {
-                cxn.weight = rng.gen_range(-2.0..=2.0);
-                continue
-            }
-            // todo: ensure new cxn.weight does not exceed min/max bounds
-            if rng.gen::<f64>() > cfg.weight.add_threshold {
-                cxn.weight -= cxn.weight * cfg.weight.sub_factor;
-                continue
-            }
-            cxn.weight += cxn.weight * cfg.weight.add_factor;
-        }
-        if rng.gen::<f64>() <= cfg.random_connection {
-            self.random_connection(cfg, innovations);
-        }
-        if rng.gen::<f64>() <= cfg.insert_node {
-            //self.insert_node(innovations);
-        }
-    }
-
-    fn random_connection(&mut self,
-        cfg: &config::Mutation, innovations: &mut speciation::Innovations) {
-        //
-        let mut rng = rand::thread_rng();
-        let mut nodes_by_layer = HashMap::new();
-        for n in &self.nodes {
-            nodes_by_layer.entry(&n.layer).or_insert_with(Vec::new).push(&n.id)
-        }
-        let max_layer = nodes_by_layer.keys().max();
-        let unodel = rng.gen_range(1..max_layer);
-        let vnodel = rng.gen_range(unodel+1..=max_layer); 
-        let unode = nodes_by_layer[&unodel].choose(&mut rng).unwrap();
-        let vnode = nodes_by_layer[&vnodel].choose(&mut rng).unwrap();
-
-        let mut establish_cxn = false;
-        for cxn in &mut self.connections {
-            if cxn.unode == **unode && cxn.vnode == **vnode {
-                establish_cxn = false;
-                if rng.gen::<f64>() <= 0.25 {
-                    match cxn.enabled {
-                        true => cxn.enabled = false,
-                        false => cxn.enabled = true,
-                    }
-                }
-                break
-            }
-        }
-        if establish_cxn {
-            self.establish_connection(
-                **unode, **vnode, rng.gen_range(-2.0..=2.0),
-                true, innovations
-            );
-        }
-    }
-
-    fn insert_node(&mut self, innovations: &mut speciation::Innovations) {
-        //
-        let mut rng = rand::thread_rng();
-        let cxns_len = self.connections.len();
-        let mut rand_cxn = self.connections[rng.gen_range(0..cxns_len)];
-        rand_cxn.enabled = false;
-        let new_node = Node{ 
-            id: self.nodes.len(), kind: 0, layer: 0, 
-            sum_input: 0, sum_output: 0 };
-        self.nodes.push(new_node);
-
-        self.establish_connection( // back half
-            rand_cxn.unode, new_node.id, rand_cxn.weight, 
-            true, innovations
-        );
-        self.establish_connection( // forward half
-            new_node.id, rand_cxn.vnode, rng.gen_range(-2.0..=2.0), 
-            true, innovations
-        );
-        //self.set_layers();
+        self.nodes.push(*node)
     }
 }
 
-
-pub fn initialise(
+pub fn init(
     cfg: &config::RtNeat, 
-    innovations: &mut speciation::Innovations) -> Network {
+    innovations: &mut species::Innovations) -> Network {
     //
-    let mut rng = rand::thread_rng();
-    let mut nodes: Vec<Node> = Vec::new();
-    let (i, o, h): (usize, usize, usize) = (
-        cfg.nodes.input.try_into().unwrap(), 
-        cfg.nodes.output.try_into().unwrap(), 
-        cfg.nodes.hidden.try_into().unwrap()
-    );
-    let mut in_out_n: Vec<Node> = Vec::new();
-    let mut hidden_n: Vec<Node> = Vec::new();
-    for id in 0..i+o+h {
-        if id < i {
-            nodes.push(Node::new(id, 1, 1, 0, 0));
-            in_out_n.push(nodes[id]);
-            continue
-        }
-        if id >= i && id < i + o {
-            nodes.push(Node::new(id, 3, 3, 0, 0));
-            in_out_n.push(nodes[id]);
-            continue
-        }
-        if id >= i + o {
-            nodes.push(Node::new(id, 2, 2, 0, 0));
-            hidden_n.push(nodes[id]);
-            continue
-        }
-    }
-    let mut network = Network { nodes, connections: Vec::new() };
-    while network.connections.is_empty() {
-        for (hnode, ionode) in iproduct!(&hidden_n, &in_out_n) {
-            if rng.gen::<f64>() < cfg.nodes.connection_chance {
-                let (unode, vnode)= match ionode.kind {
-                    1 => (ionode.id, hnode.id),
-                    3 => (hnode.id, ionode.id),
-                    _ => panic!(),
-                };
-                network.establish_connection(
-                    unode, vnode, rng.gen_range(-2.0..=2.0), 
-                    true, innovations);
-            }
-        }
-        network.mutate(&cfg.mutation, innovations); 
-    }
+    let mut network = Network { 
+        nodes: generate_nodes(&cfg.nodes), 
+        connections: Vec::new() 
+    };
+    generate_connections(cfg, innovations, &mut network);
     network
 }
 
-/*
-fn dfs(g: HashMap<i32, i32>, v: i32, seen: Vec<i32>, path: Vec<i32>) -> Vec<i32> {
-    let mut paths: Vec<i32> = Vec::new();
+fn generate_nodes(cfg: &config::Nodes) -> Vec<Node> {
+    let mut nodes: Vec<Node> = Vec::new();
+    let (i, o, h) = (cfg.input, cfg.output, cfg.hidden);
+    for id in 0..i+o+h {
+        let kind = if id < i { 1 } 
+            else if id >= i && id < i + o { 3 } 
+            else { 2 };
+        nodes.push(Node::new(id, kind, kind, 0, 0));
+    }
+    nodes
+}
 
-    if seen.is_empty() {
-
+fn generate_connections(
+    cfg: &config::RtNeat, innovations: &mut species::Innovations,
+    network: &mut Network) {
+    //
+    let mut rng = rand::thread_rng();
+    for (hnode, ionode) in iproduct!(
+        network.nodes.clone().into_iter().filter(|x| x.kind == 2), 
+        network.nodes.clone().into_iter().filter(|x| x.kind == 1 | 3) ) {
+        if !(rng.gen::<f64>() < cfg.nodes.connection_chance) { continue }
+        let (unode, vnode) = match ionode.kind {
+            1 => (ionode.id, hnode.id),
+            3 => (hnode.id, ionode.id),
+            _ => panic!(),
+        };
+        network.establish_connection(
+            unode, vnode, None, 
+            true, innovations);
+    }
+    mutation::mutate(&cfg.mutation, innovations, network);
+    if network.connections.is_empty() {
+        generate_connections(cfg, innovations, network)
     }
 }
-*/
+
+
+
+
+
+
+

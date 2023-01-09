@@ -10,7 +10,7 @@ pub struct Config {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Critters {
     pub rt_neat:            RtNeat,
-    pub initial_population: i32,
+    pub initial_population: usize,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -21,9 +21,9 @@ pub struct RtNeat {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Nodes {
-    pub input:              i32,
-    pub hidden:             i32,
-    pub output:             i32,
+    pub input:              usize,
+    pub hidden:             usize,
+    pub output:             usize,
     pub connection_chance:  f64,
 }
 
@@ -37,8 +37,8 @@ pub struct Mutation {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Weight {
     pub chance:         f64,
-    pub adj_threshold:  f64,
-    pub add_threshold:  f64,
+    pub random:  f64,
+    pub add_else_sub:  f64,
     pub add_factor:     f64,
     pub sub_factor:     f64,
 }
