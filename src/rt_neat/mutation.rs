@@ -1,3 +1,4 @@
+use itertools::Itertools;
 use std::collections::HashMap;
 use rand::seq::SliceRandom;
 use rand::Rng;
@@ -11,10 +12,10 @@ pub fn mutate(
     //
     mutate_weights(&cfg.weight, network);
     random_connection(&cfg.random_connection, innovations, network);
-    //self.insert_node(innovations);
+    insert_node(&cfg.insert_node, innovations, network);
 }
 
-fn mutate_weights(
+pub fn mutate_weights(
     cfg: &config::Weight, network: &mut network::Network) {
     //
     let mut rng = rand::thread_rng();
@@ -24,7 +25,6 @@ fn mutate_weights(
             cxn.weight = rng.gen_range(-2.0..=2.0);
             continue
         }
-        // todo: ensure new cxn.weight does not exceed min/max bounds
         if rng.gen::<f64>() > cfg.add_else_sub {
             cxn.weight *= 1.0 - cfg.sub_factor;
             continue
@@ -34,7 +34,7 @@ fn mutate_weights(
     }
 }
 
-fn random_connection(
+pub fn random_connection(
     random_connection: &f64, innovations: &mut species::Innovations,
     network: &mut network::Network) {
     //
@@ -42,11 +42,8 @@ fn random_connection(
     if rng.gen::<f64>() > *random_connection { return }
 
     let mut nodes_by_layer = HashMap::new();
-    for n in &network.nodes {
-        nodes_by_layer.entry(&n.layer).or_insert_with(Vec::new).push(&n.id)
-    }
-    let max_layer = **nodes_by_layer.keys().max()
-        .expect("hashmap should not be empty");
+    for n in &network.nodes { nodes_by_layer.entry(&n.layer).or_insert_with(Vec::new).push(&n.id) }
+    let max_layer = **nodes_by_layer.keys().max().expect("hashmap should not be empty");
     let unodel = rng.gen_range(1..max_layer);
     let vnodel = rng.gen_range(unodel+1..=max_layer); 
     let unode = nodes_by_layer[&unodel].choose(&mut rng).unwrap();
@@ -61,24 +58,20 @@ fn random_connection(
         }
         return
     }
-    network.establish_connection(
-        **unode, **vnode, None,
-        true, innovations
-    );
+    network.establish_connection(**unode, **vnode, None,true, innovations);
 }
 
-fn insert_node(
-    cfg: &config::Mutation, innovations: &mut species::Innovations, 
+pub fn insert_node(
+    insert_node: &f64, innovations: &mut species::Innovations, 
     network: &mut network::Network) {
     //
     let mut rng = rand::thread_rng();
-    if rng.gen::<f64>() > cfg.insert_node { return }
-
-    let mut rand_cxn = network.connections[rng
-        .gen_range(0..network.connections.len())];
-    rand_cxn.enabled = false;
+    if rng.gen::<f64>() > *insert_node { return }
+    let num = rng.gen_range(0..network.connections.len());
+    let rand_cxn = network.connections[num];
+    network.connections[num].enabled = false;
     let new_node = network::Node{ 
-        id: network.nodes.len(), kind: 0, layer: 0, 
+        id: network.nodes.len(), kind: 2, layer: 0, 
         sum_input: 0, sum_output: 0 };
     network.insert_node(&new_node);
     network.establish_connection( // back half
@@ -89,23 +82,28 @@ fn insert_node(
         new_node.id, rand_cxn.vnode, None, 
         true, innovations
     );
-    //set_layers(&network);
+    set_layers(network);
 }
 
 fn set_layers(
     network: &mut network::Network) {
     //
-    let g = generate_topology(&network);
-    //let mut seen: Vec<i32> = Vec::new();
-    //let mut path: Vec<i32> = Vec::new();
-    //println!("{:?}", g);
-    
+    let g = generate_topology(network);
+    let mut max_path = 0;
     for node in &mut network.nodes {
-        if node.kind == 1 { continue }
-        let all_paths = dfs(&g, node.id, &Vec::new(), Vec::new());
-        let all_paths_max = all_paths.iter().max()
-            .expect("slice should not be empty");
-        node.layer = all_paths_max + 1;
+        if node.kind == 1 || node.kind == 3 { continue }
+        let mut seen = Vec::new();
+        let mut path = Vec::new();
+        let all_paths = dfs(&g, node.id, &mut seen, &mut path);       
+        let all_paths_max = all_paths.iter().max().expect("slice should not be empty");
+        if all_paths_max > &max_path { max_path = *all_paths_max }
+        node.layer = *all_paths_max;
+    }
+    if max_path < (network.num_layers) { return }
+    network.num_layers += 1;
+    for node in &mut network.nodes {
+        if node.kind != 3 { continue }
+        node.layer += 1;
     }
 }
 
@@ -115,28 +113,25 @@ fn generate_topology(
     let mut g = HashMap::new();
     for cxn in &network.connections {
         if !cxn.enabled { continue }
-        g.entry(cxn.vnode).or_insert_with(Vec::new).push(cxn.unode);
-        //g.entry(cxn.unode).or_insert_with(Vec::new).push(cxn.vnode);     
+        g.entry(cxn.vnode).or_insert_with(Vec::new).push(cxn.unode);    
     }
     g
 }
 
 fn dfs(
     g: &HashMap<usize, Vec<usize>>, v: usize, 
-    seen: &Vec<usize>, mut path: Vec<usize>) -> Vec<usize> {
+    seen: &mut Vec<usize>, path: &mut Vec<usize>) -> Vec<usize> {
     //
     if path.is_empty() { path.push(v) }
-    //seen.unwrap_or(Vec::new()).push(v);
+    seen.push(v);
     let mut paths = Vec::new();
     for t in &g[&v] {
         if seen.contains(t) { continue }
         let mut tpath = path.to_vec();
         tpath.push(*t);
-        let to_push = dfs(g, *t, seen, tpath);
-        for e in &to_push {
-            paths.push(*e);
-            //paths.push(dfs(g, *t, seen, tpath));
-        }
+        paths.push(tpath.len());
+        if !g.keys().contains(t) { continue }
+        paths.extend(dfs(g, *t, seen, &mut tpath));
     }
     paths
 } 

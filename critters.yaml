@@ -14,4 +14,4 @@ rt_neat:
       sub_factor: 0.2
     random_connection: 0.05
     insert_node: 0.05
-initial_population: 50
+initial_population: 5

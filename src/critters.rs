@@ -23,10 +23,7 @@ impl Critters {
 pub fn init(cfg: &config::Critters) -> Critters {
     let mut innovations = rt_neat::species::Innovations::default();
     let mut population: Vec<critter::Critter> = Vec::new();
-    for _ in 0..cfg.initial_population {
-        population.push(critter::init(cfg, &mut innovations))
-    }
-    //let species: HashMap<i32, rt_neat::speciation::Species> = HashMap::default();
+    for i in 0..cfg.initial_population { population.push(critter::init(cfg, &mut innovations, i)) }
     let species = HashMap::default();
     Critters{ innovations, population, species }
 }

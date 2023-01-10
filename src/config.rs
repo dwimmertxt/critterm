@@ -37,8 +37,8 @@ pub struct Mutation {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Weight {
     pub chance:         f64,
-    pub random:  f64,
-    pub add_else_sub:  f64,
+    pub random:         f64,
+    pub add_else_sub:   f64,
     pub add_factor:     f64,
     pub sub_factor:     f64,
 }
