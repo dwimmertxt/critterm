@@ -3,5 +3,5 @@ use critterm::critters;
 
 fn main() {
     let cfg = Config::new();
-    let cs = critters::init(&cfg.critters);
+    let _cs = critters::init(&cfg.critters);
 }

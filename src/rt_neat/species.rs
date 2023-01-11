@@ -7,7 +7,7 @@ pub struct Innovations {
 
 #[derive(Default, Debug)]
 pub struct Species {
-    id:             i32,
-    members:        Vec<i32>,
-    fitness:        f64,
+    _id:             i32,
+    _members:        Vec<i32>,
+    _fitness:        f64,
 }

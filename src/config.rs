@@ -43,6 +43,12 @@ pub struct Weight {
     pub sub_factor:     f64,
 }
 
+impl Default for Config {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Config {
     pub fn new() -> Config {
         Config { critters: Config::parse_critters() }
