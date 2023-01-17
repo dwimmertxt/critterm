@@ -2,39 +2,39 @@ use serde::{Deserialize, Serialize};
 use serde_yaml::{self};
 
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Default, Serialize, Deserialize)]
 pub struct Config {
     pub critters: Critters,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Default, Serialize, Deserialize)]
 pub struct Critters {
     pub rt_neat:            RtNeat,
-    pub initial_population: usize,
+    pub initial_population: i32,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Default, Serialize, Deserialize)]
 pub struct RtNeat {
     pub nodes:      Nodes,
     pub mutation:   Mutation,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Default, Serialize, Deserialize)]
 pub struct Nodes {
-    pub input:              usize,
-    pub hidden:             usize,
-    pub output:             usize,
+    pub input:              i32,
+    pub hidden:             i32,
+    pub output:             i32,
     pub connection_chance:  f64,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Default, Serialize, Deserialize)]
 pub struct Mutation {
     pub weight:         Weight,
     pub random_connection: f64,
     pub insert_node:       f64,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Default, Serialize, Deserialize)]
 pub struct Weight {
     pub chance:         f64,
     pub random:         f64,
@@ -43,15 +43,15 @@ pub struct Weight {
     pub sub_factor:     f64,
 }
 
-impl Default for Config {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl Config {
-    pub fn new() -> Config {
-        Config { critters: Config::parse_critters() }
+    pub fn new(critters: Critters) -> Self {
+        Self { critters }
+    }
+
+    pub fn init() -> Self {
+        Self {
+            critters: Self::parse_critters()
+        }
     }
 
     fn parse_critters() -> Critters {
@@ -66,3 +66,5 @@ impl Config {
         }
     }
 }
+
+
